@@ -1,44 +1,73 @@
 // src/CraftingSystem.tsx
-import React, { useState } from 'react';
-import { Item, Recipe } from './types';
-import Inventory from './Inventory';
-import ItemSelector from './ItemSelector';
-
-const recipes: Recipe[] = [
-  { item1Id: 1, item2Id: 2, result: { id: 3, name: 'Sword', description: 'A basic sword' } },
-  { item1Id: 1, item2Id: 3, result: { id: 4, name: 'Shield', description: 'A basic shield' } }
-];
+import React, { useState } from "react";
+import { Item, CombineResponse } from "./types";
+import Inventory from "./Inventory";
+import ItemSelector from "./ItemSelector";
+import axios from "axios";
 
 const items: Item[] = [
-  { id: 1, name: 'Iron', description: 'A piece of iron' },
-  { id: 2, name: 'Wood', description: 'A piece of wood' },
-  { id: 3, name: 'Sword', description: 'A basic sword' }
+  { name: "Fire", emoji: "💧" },
+  { name: "Water", emoji: "🔥" },
+  { name: "Earth", emoji: "🌎" },
+  { name: "Wind", emoji: "💨" },
 ];
-
-
 
 const CraftingSystem: React.FC = () => {
   const [selectedItem1, setSelectedItem1] = useState<Item | null>(null);
   const [selectedItem2, setSelectedItem2] = useState<Item | null>(null);
-  const [inventory, setInventory] = useState<Item[]>(items.sort((a, b) => a.name.localeCompare(b.name)));
-  
+  const [AIResponse, setAIResponse] = useState<CombineResponse>({
+    new_element: "",
+    emoji: "",
+  });
+  const [inventory, setInventory] = useState<Item[]>(
+    items.sort((a, b) => a.name.localeCompare(b.name))
+  );
 
-  const handleCombine = () => {
+  const handleCombine = async () => {
     if (!selectedItem1 || !selectedItem2) return;
 
-    const recipe = recipes.find(
-      (r) =>
-        (r.item1Id === selectedItem1.id && r.item2Id === selectedItem2.id) ||
-        (r.item1Id === selectedItem2.id && r.item2Id === selectedItem1.id)
+    const response = await getCombinedItemDescription(
+      selectedItem1.name,
+      selectedItem2.name
     );
+    setAIResponse(response);
 
-    if (recipe) {
-      setInventory((prevInventory) => [...prevInventory, recipe.result].sort((a, b) => a.name.localeCompare(b.name)));
-      alert(`Crafted: ${recipe.result.name}`);
-      setSelectedItem1(null);
-      setSelectedItem2(null);
-    } else {
-      alert('No valid recipe found for these items!');
+    setInventory((prevInventory) => {
+      const newInventory = [...prevInventory];
+      newInventory.push({
+        name: response.new_element,
+        emoji: response.emoji,
+      });
+      return newInventory.sort((a, b) => a.name.localeCompare(b.name));
+    });
+  };
+
+  // Axios instance to set base URL
+  const apiClient = axios.create({
+    baseURL: "http://localhost:5000",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const getCombinedItemDescription = async (
+    item1: string,
+    item2: string
+  ): Promise<CombineResponse> => {
+    try {
+      const response = await apiClient.post<CombineResponse>("/combine", {
+        item1,
+        item2,
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        throw new Error(
+          error.response.data.message || "Failed to combine elements"
+        );
+      } else {
+        throw new Error("Network error");
+      }
     }
   };
 
@@ -46,10 +75,25 @@ const CraftingSystem: React.FC = () => {
     <div className="CraftingSystem">
       <h1>Crafting System</h1>
       <div className="selector-container">
-        <ItemSelector items={inventory} selectedItem={selectedItem1} onSelect={setSelectedItem1} label="Select Item 1" />
-        <ItemSelector items={inventory} selectedItem={selectedItem2} onSelect={setSelectedItem2} label="Select Item 2" />
+        <ItemSelector
+          items={inventory}
+          selectedItem={selectedItem1}
+          onSelect={setSelectedItem1}
+          label="Select Item 1"
+        />
+        <ItemSelector
+          items={inventory}
+          selectedItem={selectedItem2}
+          onSelect={setSelectedItem2}
+          label="Select Item 2"
+        />
       </div>
       <button onClick={handleCombine}>Combine</button>
+      <div className="center">
+        <h2>Latest Result</h2>
+        <h2>{AIResponse.emoji + AIResponse.new_element}</h2>
+      </div>
+
       <Inventory items={inventory} />
     </div>
   );

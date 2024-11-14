@@ -14,16 +14,16 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({ items, selectedItem, onSele
     <div>
       <label>{label}</label>
       <select
-        value={selectedItem?.id || ''}
+        value={selectedItem?.name || ''}
         onChange={(e) => {
-          const selected = items.find((item) => item.id === parseInt(e.target.value));
+          const selected = items.find((item) => item.name === (e.target.value));
           if (selected) onSelect(selected);
         }}
       >
         <option value="">Select an item</option>
         {items.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.name}
+          <option key={item.name} value={item.name}>
+            {item.name + '-' + item.emoji}
           </option>
         ))}
       </select>

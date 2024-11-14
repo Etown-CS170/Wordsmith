@@ -20,6 +20,13 @@ body {
     font-size: 1.5rem;
     color: #555;
   }
+
+  .center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+  }
   
   .CraftingSystem {
     background-color: #ffffff;

@@ -1,13 +1,9 @@
 // src/types.ts
 export interface Item {
-    id: number;
-    name: string;
-    description: string;
-  }
-  
-  export interface Recipe {
-    item1Id: number;
-    item2Id: number;
-    result: Item;
-  }
-  
+  name: string;
+  emoji: string;
+}
+export interface CombineResponse {
+  new_element: string;
+  emoji: string;
+}
