@@ -5,11 +5,23 @@ import Inventory from "./Inventory";
 import ItemSelector from "./ItemSelector";
 import axios from "axios";
 
-const items: Item[] = [
-  { name: "Fire", emoji: "💧" },
-  { name: "Water", emoji: "🔥" },
-  { name: "Earth", emoji: "🌎" },
-  { name: "Wind", emoji: "💨" },
+//AI Used to help create Api calls
+// Axios instance to set base URL
+const apiClient = axios.create({
+  baseURL: "http://localhost:5000",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+await apiClient.get("/loadDefault").then((response) => console.log(response.data));
+
+const list = await apiClient.get<Item[]>("/getCurrentList").then((response) => response.data)
+
+console.log(list);
+
+const items: Item[]= [
+  ...list
 ];
 
 const CraftingSystem: React.FC = () => {
@@ -19,8 +31,9 @@ const CraftingSystem: React.FC = () => {
     new_element: "",
     emoji: "",
   });
+  //AI used to make sure sorting doesnt break
   const [inventory, setInventory] = useState<Item[]>(
-    items.sort((a, b) => a.name.localeCompare(b.name))
+    items.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
   );
 
   const handleCombine = async () => {
@@ -32,23 +45,26 @@ const CraftingSystem: React.FC = () => {
     );
     setAIResponse(response);
 
+    if (inventory.find((item) => item.name === response.new_element)) {
+      return;
+    }
     setInventory((prevInventory) => {
-      const newInventory = [...prevInventory];
-      newInventory.push({
+      const newInventory = [...prevInventory, {
         name: response.new_element,
         emoji: response.emoji,
-      });
-      return newInventory.sort((a, b) => a.name.localeCompare(b.name));
+      }];
+      return newInventory.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     });
+    
   };
 
-  // Axios instance to set base URL
-  const apiClient = axios.create({
-    baseURL: "http://localhost:5000",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const handleInventoryItemClick = (item: Item) => {
+    if (!selectedItem1) {
+      setSelectedItem1(item);
+    } else {
+      setSelectedItem2(item);
+    }
+  };
 
   const getCombinedItemDescription = async (
     item1: string,
@@ -71,9 +87,28 @@ const CraftingSystem: React.FC = () => {
     }
   };
 
+  const handleRefreshDatabase = async () => {
+    try {
+      const response = await apiClient.post("/refreshDatabase");
+      console.log("Database reset:", response.data);
+      const updatedList = await apiClient
+        .get<Item[]>("/getCurrentList")
+        .then((res) => res.data);
+      setInventory(
+        updatedList.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+      );
+      setSelectedItem1(null);
+      setSelectedItem2(null);
+      setAIResponse({ new_element: "", emoji: "" });
+    } catch (error) {
+      console.error("Failed to refresh database:", error);
+    }
+  };
+
+  // AI used for formatting and styling
   return (
     <div className="CraftingSystem">
-      <h1>Crafting System</h1>
+      <h1>WordSmith</h1>
       <div className="selector-container">
         <ItemSelector
           items={inventory}
@@ -93,8 +128,10 @@ const CraftingSystem: React.FC = () => {
         <h2>Latest Result</h2>
         <h2>{AIResponse.emoji + AIResponse.new_element}</h2>
       </div>
-
-      <Inventory items={inventory} />
+      <div className="center">
+        <button onClick={handleRefreshDatabase}>Reset Database</button>
+      </div>
+      <Inventory items={inventory} onItemClick={handleInventoryItemClick} />
     </div>
   );
 };
