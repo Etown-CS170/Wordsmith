@@ -110,6 +110,7 @@ const CraftingSystem: React.FC = () => {
     <div className="CraftingSystem">
       <h1>WordSmith</h1>
       <div className="selector-container">
+      {/* Item Selectors are created to help and displayed as a way to see what is currently being used */}
         <ItemSelector
           items={inventory}
           selectedItem={selectedItem1}

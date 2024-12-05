@@ -29,7 +29,7 @@ print(f"Collection '{collection_name}' selected.")
 
 client = OpenAI(
     # defaults to os.environ.get("OPENAI_API_KEY")
-    api_key= os.getenv("NOPENAI_API_KEY")
+    api_key= os.getenv("OPENAI")
 )
 
 @app.route('/getCurrentList', methods=['GET'])
