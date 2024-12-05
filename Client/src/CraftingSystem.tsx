@@ -21,8 +21,6 @@ const list = await apiClient
   .get<Item[]>("/getCurrentList")
   .then((response) => response.data);
 
-console.log(list);
-
 const items: Item[] = [...list];
 
 const CraftingSystem: React.FC = () => {
@@ -32,9 +30,10 @@ const CraftingSystem: React.FC = () => {
   const [AIResponse, setAIResponse] = useState<CombineResponse>({
     new_element: "",
     emoji: "",
+    first_discovered: false,
   });
   const [targetWord, setTargetWord] = useState<string>("");
-
+  //AI fix for making sure target Word is assigned Correctly
   useEffect(() => {
     const fetchTargetWord = async () => {
       try {
@@ -47,9 +46,10 @@ const CraftingSystem: React.FC = () => {
 
     fetchTargetWord();
   }, []);
+
   //AI used to make sure sorting doesnt break
   const [inventory, setInventory] = useState<Item[]>(
-    items.sort((a, b) => (a.name || "").localeCompare(b.name || "")),
+    items.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
   );
 
   const [showPopup, setShowPopup] = useState(false);
@@ -69,13 +69,13 @@ const CraftingSystem: React.FC = () => {
 
   const handleCombine = async () => {
     if (!selectedItem1 || !selectedItem2) return;
-    setAIResponse({ new_element: "", emoji: "" });
+    setAIResponse({ new_element: "", emoji: "", first_discovered: false });
     setIsCombining(true); // Start animation
 
     try {
       const response = await getCombinedItemDescription(
         selectedItem1.name,
-        selectedItem2.name,
+        selectedItem2.name
       );
       setAIResponse(response);
 
@@ -89,7 +89,7 @@ const CraftingSystem: React.FC = () => {
             },
           ];
           return newInventory.sort((a, b) =>
-            (a.name || "").localeCompare(b.name || ""),
+            (a.name || "").localeCompare(b.name || "")
           );
         });
       }
@@ -110,7 +110,7 @@ const CraftingSystem: React.FC = () => {
 
   const getCombinedItemDescription = async (
     item1: string,
-    item2: string,
+    item2: string
   ): Promise<CombineResponse> => {
     try {
       const response = await apiClient.post<CombineResponse>("/combine", {
@@ -121,7 +121,7 @@ const CraftingSystem: React.FC = () => {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(
-          error.response.data.message || "Failed to combine elements",
+          error.response.data.message || "Failed to combine elements"
         );
       } else {
         throw new Error("Network error");
@@ -131,17 +131,16 @@ const CraftingSystem: React.FC = () => {
 
   const handleRefreshDatabase = async () => {
     try {
-      const response = await apiClient.post("/refreshDatabase");
-      console.log("Database reset:", response.data);
+      await apiClient.post("/refreshDatabase");
       const updatedList = await apiClient
         .get<Item[]>("/getCurrentList")
         .then((res) => res.data);
       setInventory(
-        updatedList.sort((a, b) => (a.name || "").localeCompare(b.name || "")),
+        updatedList.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
       );
       setSelectedItem1(null);
       setSelectedItem2(null);
-      setAIResponse({ new_element: "", emoji: "" });
+      setAIResponse({ new_element: "", emoji: "", first_discovered: false });
     } catch (error) {
       console.error("Failed to refresh database:", error);
     }
@@ -150,7 +149,6 @@ const CraftingSystem: React.FC = () => {
   const handleGetNewTargetWord = async () => {
     try {
       const response = await apiClient.get("/getNewTargetWord");
-      console.log("New target word:", response.data);
       setTargetWord(response.data.noun);
     } catch (error) {
       console.error("Failed to get new target word:", error);
@@ -201,7 +199,10 @@ const CraftingSystem: React.FC = () => {
 
       <div className="center">
         <h2>Latest Result</h2>
-        <h2>{AIResponse.emoji + AIResponse.new_element}</h2>
+        <h2>
+          {AIResponse.emoji + AIResponse.new_element}
+          {AIResponse.first_discovered ? " (New Discovery)" : ""}
+        </h2>
       </div>
       <div className="center">
         <button onClick={handleRefreshDatabase}>Reset Database</button>

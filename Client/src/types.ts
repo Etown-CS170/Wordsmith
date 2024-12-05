@@ -6,4 +6,5 @@ export interface Item {
 export interface CombineResponse {
   new_element: string;
   emoji: string;
+  first_discovered: boolean;
 }

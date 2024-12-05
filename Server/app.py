@@ -36,8 +36,6 @@ client = OpenAI(
 def getCurrentList():
     # Get all elements from the collection
     elements = list(collection.find({"active": True}, {"_id": 0}, sort=[("name", 1)]))
-    print("Elements retrieved from database.")
-#   print(elements)
     return jsonify(elements)
 
 @app.route('/getNewTargetWord', methods=['GET'])
@@ -46,7 +44,7 @@ def getNewTargetWord():
     
     if collection.count_documents({}) > 100:
         random_document = list(collection.aggregate([
-            {"$match": {"name": {"$nin": default_words}}},  # Exclude default words
+            {"$match": {"name": {"$nin": default_words}, "active": False}},  # Exclude default words
             {"$sample": {"size": 1}}
         ]))
         if random_document:
@@ -132,13 +130,15 @@ def combine():
     }
 })
     if existing_combo:
+        
         collection.update_one(
                     {"name": existing_combo["name"]},
                     { "$set": { "active": True } }
                 )
         return jsonify({
             "new_element": existing_combo["name"],
-            "emoji": existing_combo["emoji"]
+            "emoji": existing_combo["emoji"],
+            "first_discovered": False
         })
 
     try:
@@ -189,6 +189,7 @@ def combine():
             # If it exists, ensure the parent pair is added explicitly
             existing_parents = existing_element.get("parents", [])
             if parent_pair not in existing_parents:
+               
                 collection.update_one(
                     {"name": new_element},
                     {
@@ -198,7 +199,8 @@ def combine():
                 )
             return jsonify({
                 "new_element": existing_element["name"],
-                "emoji": existing_element["emoji"]
+                "emoji": existing_element["emoji"],
+                "first_discovered": False
             })
 
         # Save the new combination with explicit parent pair
@@ -210,7 +212,7 @@ def combine():
         }
         collection.insert_one(combo_entry)
 
-        return jsonify({"new_element": new_element, "emoji": emoji})
+        return jsonify({"new_element": new_element, "emoji": emoji, "first_discovered": True})
 
     except Exception as e:
         print(e)
