@@ -35,19 +35,69 @@ client = OpenAI(
 @app.route('/getCurrentList', methods=['GET'])
 def getCurrentList():
     # Get all elements from the collection
-    elements = list(collection.find({}, {"_id": 0}))
+    elements = list(collection.find({"active": True}, {"_id": 0}, sort=[("name", 1)]))
     print("Elements retrieved from database.")
-    print(elements)
+#   print(elements)
     return jsonify(elements)
+
+@app.route('/getNewTargetWord', methods=['GET'])
+def getNewTargetWord():
+    default_words = ["Fire", "Water", "Earth", "Air"]
+    
+    if collection.count_documents({}) > 100:
+        random_document = list(collection.aggregate([
+            {"$match": {"name": {"$nin": default_words}}},  # Exclude default words
+            {"$sample": {"size": 1}}
+        ]))
+        if random_document:
+            return jsonify({"noun": random_document[0]["name"]})
+        else:
+            return jsonify({"error": "No document found"})
+
+
+    # Call the API to generate a new target word
+    response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"TASK: Give me a single random noun for my game about combining words."
+                }
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "custom_format_schema",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "noun": {
+                                "description": "The name of the single new noun",
+                                "type": "string"
+                            },
+                        },
+                        "additionalProperties": False
+                    }
+                }
+            }
+        )
+    response_content = response.choices[0].message.content
+    parsed_content = json.loads(response_content)
+    noun = parsed_content.get("noun")
+
+    if not noun:
+        return jsonify({"error": "The response format is incorrect."}), 500
+    return jsonify({"noun": noun})
+    
 
 @app.route('/loadDefault', methods=['GET'])
 def loadDefault():
     # Load Default Elements
     elements = [
-        {"name": "Fire", "emoji": "🔥"},
-        {"name": "Water", "emoji": "💧"},
-        {"name": "Earth", "emoji": "🌍"},
-        {"name": "Air", "emoji": "💨"},
+        {"name": "Fire", "emoji": "🔥", "active": True},
+        {"name": "Water", "emoji": "💧", "active": True},
+        {"name": "Earth", "emoji": "🌍", "active": True},
+        {"name": "Air", "emoji": "💨", "active": True},
     ]
 
     # Insert elements into MongoDB collection if not already present
@@ -82,6 +132,10 @@ def combine():
     }
 })
     if existing_combo:
+        collection.update_one(
+                    {"name": existing_combo["name"]},
+                    { "$set": { "active": True } }
+                )
         return jsonify({
             "new_element": existing_combo["name"],
             "emoji": existing_combo["emoji"]
@@ -137,7 +191,10 @@ def combine():
             if parent_pair not in existing_parents:
                 collection.update_one(
                     {"name": new_element},
-                    {"$push": {"parents": parent_pair}}
+                    {
+                        "$push": {"parents": parent_pair},
+                        "$set": { "active": True } 
+                    }
                 )
             return jsonify({
                 "new_element": existing_element["name"],
@@ -148,35 +205,37 @@ def combine():
         combo_entry = {
             "name": new_element,
             "emoji": emoji,
-            "parents": [parent_pair]  # Explicitly store as a pair
+            "parents": [parent_pair],  # Explicitly store as a pair
+            "active": True  # Add active flag to allow for future filtering
         }
         collection.insert_one(combo_entry)
 
         return jsonify({"new_element": new_element, "emoji": emoji})
 
     except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/refreshDatabase', methods=['POST'])
 def refreshDatabase():
     try:
-        # Delete all existing documents in the collection
-        collection.delete_many({})
-        print("Database cleared.")
+        # Set all active flags to False before clearing the database
+        collection.update_many({}, {"$set": {"active": False}})
+        print("All active flags set to False.")
 
         # Load default elements
         elements = [
-            {"name": "Fire", "emoji": "🔥"},
-            {"name": "Water", "emoji": "💧"},
-            {"name": "Earth", "emoji": "🌍"},
-            {"name": "Air", "emoji": "💨"},
+            {"name": "Fire", "emoji": "🔥", "active": True},
+            {"name": "Water", "emoji": "💧", "active": True},
+            {"name": "Earth", "emoji": "🌍", "active": True},
+            {"name": "Air", "emoji": "💨", "active": True},
         ]
 
         # Insert default elements into the collection
         collection.insert_many(elements)
         print("Default elements added to database.")
 
-        return jsonify({"message": "Database refreshed and default elements loaded."})
+        return jsonify({"message": "Database refreshed, active flags set to False, and default elements loaded."})
     except Exception as e:
         # Handle exceptions and return an error response
         return jsonify({"error": str(e)}), 500
