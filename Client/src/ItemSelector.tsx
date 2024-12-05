@@ -31,39 +31,42 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   // Find the currently selected option
   const selectedOption = selectedItem
-    ? { value: selectedItem.name, label: `${selectedItem.emoji} ${selectedItem.name}` }
+    ? {
+        value: selectedItem.name,
+        label: `${selectedItem.emoji} ${selectedItem.name}`,
+      }
     : null;
 
-// Done with AI due to weird bugs with react-select
-// Custom styles for react-select
-const customStyles: StylesConfig<ItemOption, false> = {
-  control: (provided) => ({
-    ...provided,
-    width: "100%", // Percent width
-    minHeight: 40, // Consistent height
-    borderRadius: "8px", // Optional: Add rounded corners for better aesthetics
-  }),
-  menu: (provided) => ({
-    ...provided,
-    width: "100%", // Match dropdown width to control
-    padding: "5px", // Add padding inside the dropdown menu
-    borderRadius: "8px", // Optional: Add rounded corners
-  }),
-  valueContainer: (provided) => ({
-    ...provided,
-    height: 40, // Consistent height
-  }),
-  singleValue: (provided) => ({
-    ...provided,
-    overflow: "hidden", // Prevent text overflow
-    textOverflow: "ellipsis", // Add ellipsis for long text
-    whiteSpace: "nowrap",
-  }),
-  dropdownIndicator: (provided) => ({
-    ...provided,
-    padding: "5px", // Add padding around the dropdown indicator
-  }),
-};
+  // Done with AI due to weird bugs with react-select
+  // Custom styles for react-select
+  const customStyles: StylesConfig<ItemOption, false> = {
+    control: (provided) => ({
+      ...provided,
+      width: "100%", // Percent width
+      minHeight: 40, // Consistent height
+      borderRadius: "8px", // Optional: Add rounded corners for better aesthetics
+    }),
+    menu: (provided) => ({
+      ...provided,
+      width: "100%", // Match dropdown width to control
+      padding: "5px", // Add padding inside the dropdown menu
+      borderRadius: "8px", // Optional: Add rounded corners
+    }),
+    valueContainer: (provided) => ({
+      ...provided,
+      height: 40, // Consistent height
+    }),
+    singleValue: (provided) => ({
+      ...provided,
+      overflow: "hidden", // Prevent text overflow
+      textOverflow: "ellipsis", // Add ellipsis for long text
+      whiteSpace: "nowrap",
+    }),
+    dropdownIndicator: (provided) => ({
+      ...provided,
+      padding: "5px", // Add padding around the dropdown indicator
+    }),
+  };
 
   return (
     <div className="item-selector">
@@ -72,7 +75,11 @@ const customStyles: StylesConfig<ItemOption, false> = {
         options={options}
         value={selectedOption}
         onChange={(option) =>
-          onSelect(option ? items.find((item) => item.name === option.value) || null : null)
+          onSelect(
+            option
+              ? items.find((item) => item.name === option.value) || null
+              : null,
+          )
         }
         isClearable
         placeholder="Search for an item..."

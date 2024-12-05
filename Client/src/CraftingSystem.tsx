@@ -49,7 +49,7 @@ const CraftingSystem: React.FC = () => {
   }, []);
   //AI used to make sure sorting doesnt break
   const [inventory, setInventory] = useState<Item[]>(
-    items.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+    items.sort((a, b) => (a.name || "").localeCompare(b.name || "")),
   );
 
   const [showPopup, setShowPopup] = useState(false);
@@ -75,7 +75,7 @@ const CraftingSystem: React.FC = () => {
     try {
       const response = await getCombinedItemDescription(
         selectedItem1.name,
-        selectedItem2.name
+        selectedItem2.name,
       );
       setAIResponse(response);
 
@@ -89,7 +89,7 @@ const CraftingSystem: React.FC = () => {
             },
           ];
           return newInventory.sort((a, b) =>
-            (a.name || "").localeCompare(b.name || "")
+            (a.name || "").localeCompare(b.name || ""),
           );
         });
       }
@@ -110,7 +110,7 @@ const CraftingSystem: React.FC = () => {
 
   const getCombinedItemDescription = async (
     item1: string,
-    item2: string
+    item2: string,
   ): Promise<CombineResponse> => {
     try {
       const response = await apiClient.post<CombineResponse>("/combine", {
@@ -121,7 +121,7 @@ const CraftingSystem: React.FC = () => {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(
-          error.response.data.message || "Failed to combine elements"
+          error.response.data.message || "Failed to combine elements",
         );
       } else {
         throw new Error("Network error");
@@ -137,7 +137,7 @@ const CraftingSystem: React.FC = () => {
         .get<Item[]>("/getCurrentList")
         .then((res) => res.data);
       setInventory(
-        updatedList.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        updatedList.sort((a, b) => (a.name || "").localeCompare(b.name || "")),
       );
       setSelectedItem1(null);
       setSelectedItem2(null);
